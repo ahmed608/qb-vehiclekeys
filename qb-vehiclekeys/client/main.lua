@@ -213,6 +213,42 @@ function isBlacklistedVehicle(vehicle)
     if Entity(vehicle).state.ignoreLocks or GetVehicleClass(vehicle) == 13 then isBlacklisted = true end
     return isBlacklisted
 end
+function ToggleVehicleLockswithoutnui(veh)
+    if veh then
+        if not isBlacklistedVehicle(veh) then
+            if HasKeys(QBCore.Functions.GetPlate(veh)) or AreKeysJobShared(veh) then
+                local ped = PlayerPedId()
+                local vehLockStatus = GetVehicleDoorLockStatus(veh)
+
+                loadAnimDict("anim@mp_player_intmenu@key_fob@")
+                TaskPlayAnim(ped, 'anim@mp_player_intmenu@key_fob@', 'fob_click', 3.0, 3.0, -1, 49, 0, false, false, false)
+
+                TriggerServerEvent("InteractSound_SV:PlayWithinDistance", 5, "lock", 0.3)
+
+                NetworkRequestControlOfEntity(veh)
+                if vehLockStatus == 1 then
+                    TriggerServerEvent('qb-vehiclekeys:server:setVehLockState', NetworkGetNetworkIdFromEntity(veh), 2)
+                    QBCore.Functions.Notify(Lang:t("notify.vlock"), "primary")
+                else
+                    TriggerServerEvent('qb-vehiclekeys:server:setVehLockState', NetworkGetNetworkIdFromEntity(veh), 1)
+                    QBCore.Functions.Notify(Lang:t("notify.vunlock"), "success")
+                end
+
+                SetVehicleLights(veh, 2)
+                Wait(250)
+                SetVehicleLights(veh, 1)
+                Wait(200)
+                SetVehicleLights(veh, 0)
+                Wait(300)
+                ClearPedTasks(ped)
+            else
+                QBCore.Functions.Notify(Lang:t("notify.ydhk"), 'error')
+            end
+        else
+            TriggerServerEvent('qb-vehiclekeys:server:setVehLockState', NetworkGetNetworkIdFromEntity(veh), 1)
+        end
+    end
+end
 function GiveKeys(id, plate)
     local distance = #(GetEntityCoords(PlayerPedId()) - GetEntityCoords(GetPlayerPed(GetPlayerFromServerId(id))))
     if distance < 1.5 and distance > 0.0 then
@@ -235,14 +271,6 @@ function loadAnimDict(dict)
         RequestAnimDict(dict)
         Wait(0)
     end
-end
-function GetVehicleInDirection(coordFromOffset, coordToOffset)
-    local ped = PlayerPedId()
-    local coordFrom = GetOffsetFromEntityInWorldCoords(ped, coordFromOffset.x, coordFromOffset.y, coordFromOffset.z)
-    local coordTo = GetOffsetFromEntityInWorldCoords(ped, coordToOffset.x, coordToOffset.y, coordToOffset.z)
-    local rayHandle = CastRayPointToPoint(coordFrom.x, coordFrom.y, coordFrom.z, coordTo.x, coordTo.y, coordTo.z, 10, PlayerPedId(), 0)
-    local _, _, _, _, vehicle = GetShapeTestResult(rayHandle)
-    return vehicle
 end
 -- If in vehicle returns that, otherwise tries 3 different raycasts to get the vehicle they are facing.
 -- Raycasts picture: https://i.imgur.com/FRED0kV.png
@@ -575,42 +603,6 @@ function DrawText3D(x, y, z, text)
     DrawRect(0.0, 0.0 + 0.0125, 0.017 + factor, 0.03, 0, 0, 0, 75)
     ClearDrawOrigin()
 end
-function ToggleVehicleLockswithoutnui(veh)
-    if veh then
-        if not isBlacklistedVehicle(veh) then
-            if HasKeys(QBCore.Functions.GetPlate(veh)) or AreKeysJobShared(veh) then
-                local ped = PlayerPedId()
-                local vehLockStatus = GetVehicleDoorLockStatus(veh)
-
-                loadAnimDict("anim@mp_player_intmenu@key_fob@")
-                TaskPlayAnim(ped, 'anim@mp_player_intmenu@key_fob@', 'fob_click', 3.0, 3.0, -1, 49, 0, false, false, false)
-
-                TriggerServerEvent("InteractSound_SV:PlayWithinDistance", 5, "lock", 0.3)
-
-                NetworkRequestControlOfEntity(veh)
-                if vehLockStatus == 1 then
-                    TriggerServerEvent('qb-vehiclekeys:server:setVehLockState', NetworkGetNetworkIdFromEntity(veh), 2)
-                    QBCore.Functions.Notify(Lang:t("notify.vlock"), "primary")
-                else
-                    TriggerServerEvent('qb-vehiclekeys:server:setVehLockState', NetworkGetNetworkIdFromEntity(veh), 1)
-                    QBCore.Functions.Notify(Lang:t("notify.vunlock"), "success")
-                end
-
-                SetVehicleLights(veh, 2)
-                Wait(250)
-                SetVehicleLights(veh, 1)
-                Wait(200)
-                SetVehicleLights(veh, 0)
-                Wait(300)
-                ClearPedTasks(ped)
-            else
-                QBCore.Functions.Notify(Lang:t("notify.ydhk"), 'error')
-            end
-        else
-            TriggerServerEvent('qb-vehiclekeys:server:setVehLockState', NetworkGetNetworkIdFromEntity(veh), 1)
-        end
-    end
-end
 -----------------------
 ----   NUICallback   ----
 -----------------------
@@ -633,6 +625,3 @@ RegisterNUICallback('engine', function()
     TriggerEvent("qb-vehiclekeys:client:ToggleEngine")
 	SetNuiFocus(false, false)
 end)
-
-
-
