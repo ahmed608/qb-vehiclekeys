@@ -116,8 +116,11 @@ end)
 -----------------------
 RegisterKeyMapping('togglelocks', Lang:t("info.tlock"), 'keyboard', 'L')
 RegisterCommand('togglelocks', function()
-    openmenu()
-  
+  if Config.UseKeyfob then
+     ToggleVehicleLockswithoutnui(GetVehicle())
+  else
+     openmenu()
+  end
 end)
 RegisterKeyMapping('engine', Lang:t("info.engine"), 'keyboard', 'G')
 RegisterCommand('engine', function()
@@ -571,6 +574,42 @@ function DrawText3D(x, y, z, text)
     local factor = (string.len(text)) / 370
     DrawRect(0.0, 0.0 + 0.0125, 0.017 + factor, 0.03, 0, 0, 0, 75)
     ClearDrawOrigin()
+end
+function ToggleVehicleLockswithoutnui(veh)
+    if veh then
+        if not isBlacklistedVehicle(veh) then
+            if HasKeys(QBCore.Functions.GetPlate(veh)) or AreKeysJobShared(veh) then
+                local ped = PlayerPedId()
+                local vehLockStatus = GetVehicleDoorLockStatus(veh)
+
+                loadAnimDict("anim@mp_player_intmenu@key_fob@")
+                TaskPlayAnim(ped, 'anim@mp_player_intmenu@key_fob@', 'fob_click', 3.0, 3.0, -1, 49, 0, false, false, false)
+
+                TriggerServerEvent("InteractSound_SV:PlayWithinDistance", 5, "lock", 0.3)
+
+                NetworkRequestControlOfEntity(veh)
+                if vehLockStatus == 1 then
+                    TriggerServerEvent('qb-vehiclekeys:server:setVehLockState', NetworkGetNetworkIdFromEntity(veh), 2)
+                    QBCore.Functions.Notify(Lang:t("notify.vlock"), "primary")
+                else
+                    TriggerServerEvent('qb-vehiclekeys:server:setVehLockState', NetworkGetNetworkIdFromEntity(veh), 1)
+                    QBCore.Functions.Notify(Lang:t("notify.vunlock"), "success")
+                end
+
+                SetVehicleLights(veh, 2)
+                Wait(250)
+                SetVehicleLights(veh, 1)
+                Wait(200)
+                SetVehicleLights(veh, 0)
+                Wait(300)
+                ClearPedTasks(ped)
+            else
+                QBCore.Functions.Notify(Lang:t("notify.ydhk"), 'error')
+            end
+        else
+            TriggerServerEvent('qb-vehiclekeys:server:setVehLockState', NetworkGetNetworkIdFromEntity(veh), 1)
+        end
+    end
 end
 -----------------------
 ----   NUICallback   ----
