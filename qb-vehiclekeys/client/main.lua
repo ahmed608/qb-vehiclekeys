@@ -208,10 +208,8 @@ function ToggleEngine(veh)
         if not isBlacklistedVehicle(veh) then
             if HasKeys(QBCore.Functions.GetPlate(veh)) or AreKeysJobShared(veh) then
                 if EngineOn then
-                    print("funciona1")
                     SetVehicleEngineOn(veh, false, false, true)
                 else
-                    print("funciona2")
                     SetVehicleEngineOn(veh, true, true, true)
                 end
             end
